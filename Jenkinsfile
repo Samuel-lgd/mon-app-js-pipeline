@@ -51,7 +51,14 @@ pipeline {
                 '''
             }
         }
-        
+
+        stage('Show Environment') {
+            steps {
+                echo 'Affichage des variables d\'environnement...'
+                sh 'printenv'
+            }
+        }
+    
         stage('Build') {
             steps {
                 echo 'Construction de l\'application...'
@@ -59,12 +66,6 @@ pipeline {
                     npm run build
                     ls -la dist/
                 '''
-            }
-            stage('Show Environment') {
-                steps {
-                    echo 'Affichage des variables d\'environnement...'
-                    sh 'printenv'
-                }
             }
         }
         
