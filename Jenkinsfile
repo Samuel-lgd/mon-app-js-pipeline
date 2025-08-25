@@ -79,7 +79,7 @@ pipeline {
             steps {
                 echo 'Déploiement vers l\'environnement de staging...'
                 sh '''
-                    echo "Déploiement staging simulé"
+                    echo "Déploiement staging"
                     mkdir -p staging
                     cp -r dist/* staging/
                 '''
@@ -97,11 +97,14 @@ pipeline {
                     if [ -d "${DEPLOY_DIR}" ]; then
                         cp -r ${DEPLOY_DIR} ${DEPLOY_DIR}_backup_$(date +%Y%m%d_%H%M%S)
                     fi
-                    
+
                     echo "Déploiement de la nouvelle version..."
-                    mkdir -p ${DEPLOY_DIR}
-                    cp -r dist/* ${DEPLOY_DIR}/
-                    
+                    if [ ! -d "${DEPLOY_DIR}" ]; then
+                        sudo mkdir -p ${DEPLOY_DIR}
+                        sudo chown $(whoami):$(whoami) ${DEPLOY_DIR}
+                    fi
+                    sudo cp -r dist/* ${DEPLOY_DIR}/
+
                     echo "Vérification du déploiement..."
                     ls -la ${DEPLOY_DIR}
                 '''
