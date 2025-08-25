@@ -60,6 +60,12 @@ pipeline {
                     ls -la dist/
                 '''
             }
+            stage('Show Environment') {
+                steps {
+                    echo 'Affichage des variables d\'environnement...'
+                    sh 'printenv'
+                }
+            }
         }
         
         stage('Security Scan') {
