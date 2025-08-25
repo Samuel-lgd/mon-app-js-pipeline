@@ -55,6 +55,8 @@ pipeline {
         stage('Show Environment') {
             steps {
                 echo 'Affichage des variables d\'environnement...'
+                echo "BRANCH_NAME=${env.BRANCH_NAME}"
+                echo "GIT_BRANCH=${env.GIT_BRANCH}"
                 sh 'printenv'
             }
         }
