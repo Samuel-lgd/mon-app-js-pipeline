@@ -97,10 +97,7 @@ pipeline {
         
         stage('Deploy to Production') {
             when {
-                anyOf {
-                    branch 'main'
-                    branch 'origin/main'
-                }
+                expression { env.GIT_BRANCH == 'origin/main' }
             }
             steps {
                 echo 'Déploiement vers la production...'
