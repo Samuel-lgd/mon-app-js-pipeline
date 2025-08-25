@@ -35,10 +35,11 @@ pipeline {
             }
             post {
                 always {
-                    publishTestResults testResultsPattern: 'test-results.xml'
+                    junit testResults: 'test-results.xml', allowEmptyResults: true
                 }
             }
         }
+
         
         stage('Code Quality Check') {
             steps {
