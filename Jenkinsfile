@@ -6,7 +6,8 @@ pipeline {
     environment {
         NODE_VERSION = '18'
         APP_NAME = 'mon-app-js'
-        DEPLOY_DIR = '/var/www/html/mon-app'
+        DEPLOY_DIR = '/var/www/html'
+        APP_PORT = '3000'
     }
     
     stages {
@@ -102,20 +103,29 @@ pipeline {
             steps {
                 echo 'Déploiement vers la production...'
                 sh '''
+                    echo "Arrêt du serveur précédent s'il existe..."
+                    pkill -f "python3 -m http.server" || true
+                    
                     echo "Sauvegarde de la version précédente..."
                     if [ -d "${DEPLOY_DIR}" ]; then
-                        cp -r ${DEPLOY_DIR} ${DEPLOY_DIR}_backup_$(date +%Y%m%d_%H%M%S)
+                        cp -r ${DEPLOY_DIR} ${DEPLOY_DIR}_backup_$(date +%Y%m%d_%H%M%S) || true
                     fi
 
                     echo "Déploiement de la nouvelle version..."
-                    if [ ! -d "${DEPLOY_DIR}" ]; then
-                        sudo mkdir -p ${DEPLOY_DIR}
-                        sudo chown $(whoami):$(whoami) ${DEPLOY_DIR}
-                    fi
-                    sudo cp -r dist/* ${DEPLOY_DIR}/
+                    mkdir -p ${DEPLOY_DIR}
+                    cp -r dist/* ${DEPLOY_DIR}/
+
+                    echo "Démarrage du serveur web sur le port ${APP_PORT}..."
+                    cd ${DEPLOY_DIR}
+                    nohup python3 -m http.server ${APP_PORT} > /tmp/webserver.log 2>&1 &
+                    echo $! > /tmp/webserver.pid
+                    
+                    echo "Attente du démarrage du serveur..."
+                    sleep 3
 
                     echo "Vérification du déploiement..."
                     ls -la ${DEPLOY_DIR}
+                    echo "Serveur web démarré sur le port ${APP_PORT}"
                 '''
             }
         }
@@ -126,9 +136,24 @@ pipeline {
                 script {
                     try {
                         sh '''
-                            echo "Test de connectivité..."
-                            # Simulation d'un health check
-                            echo "Application déployée avec succès"
+                            echo "Test de connectivité sur le port ${APP_PORT}..."
+                            
+                            # Vérification que le serveur répond
+                            for i in {1..10}; do
+                                if curl -f http://localhost:${APP_PORT}/ > /dev/null 2>&1; then
+                                    echo "✅ Application accessible sur http://localhost:${APP_PORT}"
+                                    echo "✅ Déploiement réussi !"
+                                    break
+                                else
+                                    echo "Tentative $i/10 - En attente..."
+                                    sleep 2
+                                fi
+                                
+                                if [ $i -eq 10 ]; then
+                                    echo "❌ L'application ne répond pas après 10 tentatives"
+                                    exit 1
+                                fi
+                            done
                         '''
                     } catch (Exception e) {
                         currentBuild.result = 'UNSTABLE'
