@@ -141,8 +141,8 @@ pipeline {
                             # Vérification que le serveur répond
                             for i in {1..10}; do
                                 if curl -f http://localhost:${APP_PORT}/ > /dev/null 2>&1; then
-                                    echo "✅ Application accessible sur http://localhost:${APP_PORT}"
-                                    echo "✅ Déploiement réussi !"
+                                    echo "Application accessible sur http://localhost:${APP_PORT}"
+                                    echo "Déploiement réussi !"
                                     break
                                 else
                                     echo "Tentative $i/10 - En attente..."
@@ -150,7 +150,7 @@ pipeline {
                                 fi
                                 
                                 if [ $i -eq 10 ]; then
-                                    echo "❌ L'application ne répond pas après 10 tentatives"
+                                    echo "L'application ne répond pas après 10 tentatives"
                                     exit 1
                                 fi
                             done
@@ -163,7 +163,7 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             echo 'Nettoyage des ressources temporaires...'
@@ -172,38 +172,31 @@ pipeline {
                 rm -rf staging
             '''
         }
+
         success {
-            echo 'Pipeline exécuté avec succès!'
-            emailext (
-                subject: "Build Success: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
-                body: """
-                    Le déploiement de ${env.JOB_NAME} s'est terminé avec succès.
-                    
-                    Build: ${env.BUILD_NUMBER}
-                    Branch: ${env.BRANCH_NAME}
-                    
-                    Voir les détails: ${env.BUILD_URL}
-                """,
-                to: "${env.CHANGE_AUTHOR_EMAIL}"
+            slackSend(
+                channel: '#general',
+                color: 'good',
+                message: """
+                Build réussi !
+                Projet: ${env.JOB_NAME}
+                Build: ${env.BUILD_NUMBER}
+                Branche: ${env.BRANCH_NAME}
+                """
             )
         }
+        
         failure {
-            echo 'Le pipeline a échoué!'
-            emailext (
-                subject: "Build Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
-                body: """
-                    Le déploiement de ${env.JOB_NAME} a échoué.
-                    
-                    Build: ${env.BUILD_NUMBER}
-                    Branch: ${env.BRANCH_NAME}
-                    
-                    Voir les détails: ${env.BUILD_URL}
-                """,
-                to: "${env.CHANGE_AUTHOR_EMAIL}"
+            slackSend(
+                channel: '#general',
+                color: 'danger',
+                message: """
+                Build échoué !
+                Projet: ${env.JOB_NAME}
+                Build: ${env.BUILD_NUMBER}
+                Voir: ${env.BUILD_URL}
+                """
             )
-        }
-        unstable {
-            echo 'Build instable - des avertissements ont été détectés'
         }
     }
 }
