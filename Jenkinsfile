@@ -212,7 +212,7 @@ pipeline {
                     actions: [
                         [
                             type: "button",
-                            text: "Voir dans Blue Ocean",
+                            text: "Voir dans Blue Ocean:",
                             url: "${env.BUILD_URL}display/redirect"
                         ]
                     ]
