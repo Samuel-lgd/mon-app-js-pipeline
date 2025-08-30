@@ -98,7 +98,7 @@ pipeline {
         
         stage('Deploy to Production') {
             when {
-                expression { env.GIT_BRANCH == 'origin/main' }
+                expression { env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'main'}
             }
             steps {
                 echo 'Déploiement vers la production...'
@@ -175,7 +175,7 @@ pipeline {
 
         success {
             slackSend(
-                channel: '#general',
+                channel: '#jenkins-deployments',
                 color: 'good',
                 message: """
                 Build réussi !
@@ -188,7 +188,7 @@ pipeline {
         
         failure {
             slackSend(
-                channel: '#general',
+                channel: '#jenkins-deployments',
                 color: 'danger',
                 message: """
                 Build échoué !
