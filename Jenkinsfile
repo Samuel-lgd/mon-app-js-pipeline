@@ -9,6 +9,19 @@ pipeline {
         DEPLOY_DIR = '/var/www/html'
         APP_PORT = '3000'
     }
+
+    parameters {
+        choice(
+            choices: ['dev', 'staging', 'prod'],
+            description: 'Environnement de déploiement',
+            name: 'ENVIRONMENT'
+        )
+        booleanParam(
+            defaultValue: false,
+            description: 'Ignorer les tests ?',
+            name: 'SKIP_TESTS'
+        )
+    }
     
     stages {
         stage('Checkout') {
@@ -82,23 +95,9 @@ pipeline {
             }
         }
         
-        stage('Deploy to Staging') {
-            when {
-                branch 'develop'
-            }
-            steps {
-                echo 'Déploiement vers l\'environnement de staging...'
-                sh '''
-                    echo "Déploiement staging"
-                    mkdir -p staging
-                    cp -r dist/* staging/
-                '''
-            }
-        }
-        
         stage('Deploy to Production') {
             when {
-                expression { env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'main'}
+                expression { env.ENVIRONMENT == 'prod' }
             }
             steps {
                 echo 'Déploiement vers la production...'
@@ -177,12 +176,23 @@ pipeline {
             slackSend(
                 channel: '#jenkins-deployments',
                 color: 'good',
-                message: """
-                Build réussi !
-                Projet: ${env.JOB_NAME}
-                Build: ${env.BUILD_NUMBER}
-                Branche: ${env.BRANCH_NAME}
-                """
+                message: "Build réussi !",
+                attachments: [[
+                    title: "Build ${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                    titleLink: "${env.BUILD_URL}",
+                    fields: [
+                        [title: 'Branche', value: "${env.BRANCH_NAME}", short: true],
+                        [title: 'Commit', value: "${env.GIT_COMMIT[0..7]}", short: true],
+                        [title: 'Durée', value: "${currentBuild.durationString}", short: true]
+                    ],
+                    actions: [
+                        [
+                            type: "button",
+                            text: "Voir dans Blue Ocean",
+                            url: "${env.BUILD_URL}display/redirect"
+                        ]
+                    ]
+                ]]
             )
         }
         
@@ -190,12 +200,23 @@ pipeline {
             slackSend(
                 channel: '#jenkins-deployments',
                 color: 'danger',
-                message: """
-                Build échoué !
-                Projet: ${env.JOB_NAME}
-                Build: ${env.BUILD_NUMBER}
-                Voir: ${env.BUILD_URL}
-                """
+                message: "Build échoué !",
+                attachments: [[
+                    title: "Build ${env.BUILD_NUMBER} - ${env.JOB_NAME}",
+                    titleLink: "${env.BUILD_URL}",
+                    fields: [
+                        [title: 'Branche', value: "${env.BRANCH_NAME}", short: true],
+                        [title: 'Commit', value: "${env.GIT_COMMIT[0..7]}", short: true],
+                        [title: 'Durée', value: "${currentBuild.durationString}", short: true]
+                    ],
+                    actions: [
+                        [
+                            type: "button",
+                            text: "Voir dans Blue Ocean",
+                            url: "${env.BUILD_URL}display/redirect"
+                        ]
+                    ]
+                ]]
             )
         }
     }
